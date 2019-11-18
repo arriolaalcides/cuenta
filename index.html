@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Cuenta Bancaria</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1" />
+	<!-- Latest compiled and minified CSS -->
+	<link rel="stylesheet" href="./css/bootstrap.min.css">
+	<link rel="stylesheet" type="text/css" href="./css/jquery.dataTables.min.css">
+	<script type="text/javascript" language="javascript" src="./js/jquery-3.3.1.js"></script>
+	<script type="text/javascript" language="javascript" src="./js/jquery.dataTables.min.js"></script>
+	<!-- Latest compiled JavaScript -->
+	<script src="./js/bootstrap.min.js"></script>
+	<script type="text/javascript" class="init">
+
+		$(document).ready(function() {
+			// https://datatables.net/forums/discussion/48815/how-can-i-add-a-button-to-each-row-of-the-table
+
+			$('#detalleCuenta').hide();
+
+			// Le da el formato a la tabla
+			var table = $('#example').DataTable({
+					
+					"language": {
+					            "url": "//cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/Spanish.json"
+					        },
+			        //"ajax": './data/data.txt',
+			        "columnDefs": [ {
+			            "targets": -1,
+			            "data": null,
+			            "defaultContent": "<button data-toggle='modal' data-target='#detalle' value='' class='delete'>Seleccionar</button>"
+			        } ],
+			        "order": [[ 1, "desc" ]]
+    		});
+		 	
+		 	// Agrega un elemento a la table (sólo en memoria)
+		    $('#addRow').on( 'click', function () {
+
+		    	if ($('#cuenta').val().length ===0) 
+		    	{
+		    		$('#mensaje').show();
+		    		return false;
+		    	}
+
+		        table.row.add( [
+		            $('#cuenta').val(),
+		            '500'
+		        ] ).draw(true);
+		    } );
+
+		    // Lleva al modal de detalles, los valores de cuenta y saldo
+		    $(document).on('click', '.delete', function(){
+
+		    	$('#mensajeError').hide();
+
+		    	$('#detalleCuenta').hide();
+
+        		var table = $('#example').DataTable();
+
+        		var datos = table.rows($(this).closest('tr')).data().eq(0);
+
+        		$('#cuentaNombre').val(datos[0]);
+
+        		$('#cuentaSaldo').val(datos[1]);
+		        
+		    });
+
+		    // Elimina una cuenta
+		    $('#baja').on( 'click', function () {
+
+		    	var cuentaSaldo = $('#cuentaSaldo').val();
+
+		    	var cuentaNombre = $('#cuentaNombre').val();
+
+		    	if (parseFloat(cuentaSaldo) > 0) 
+		    	{
+		    		$('#mensajeError').show();
+		    		$('#mensajeError').text('El saldo de la cuenta debe ser 0 para esta operación.');
+		    		return false;
+		    	}
+
+		    	table.rows().nodes().each(function(a,b) {
+		            
+		            if($(a).children().eq(0).text() == cuentaNombre) table.rows(a).remove();
+		            
+	          	});
+
+	          table.rows().invalidate();
+	          table.draw();
+	          $('#showRow').click();
+		    } );
+
+		    // Muestra los detalles del movimiento de la cuenta
+		    $('#saldo').on( 'click', function () {
+		    	
+		    	$('#detalleCuenta').toggle();
+
+		    	var valorSaldo = $('#cuentaSaldo').val();
+
+		    	//$('#detalleCuenta').show();
+
+		    	prepararMovSaldo(valorSaldo);
+
+		    	//$('#totalSaldo').text(valorSaldo);
+		    });
+
+		} );
+
+		// Función auxiliar que arma la tabla de saldo de movimientos
+		function prepararMovSaldo(valor)
+		{
+			$("#cuerpoSaldo").text('');
+
+			var saldo = 0;
+
+			var color = '';
+
+			var tipoMovimiento = '';
+
+			for (var i =10; i > 0; i--) 
+			{	
+				// Si el incremental es 10, suma al saldo ese valor, sino, coloca la posición
+				saldo = (i==10)? parseFloat(valor) + i : i;
+				
+				if(i%2==0)
+				{
+					color = 'green';
+					tipoMovimiento = 'Deposito';
+				} 
+				else
+				{
+					color = 'red';
+					tipoMovimiento = 'Extraccion'
+				} 
+
+				$("#cuerpoSaldo").append('<tr style="color:'+color+'"><td>'+tipoMovimiento+'</td><td>'+saldo+'</td></tr>');
+			}
+			$("#cuerpoSaldo").append('<tr><td><b>Total</b></td><td>'+valor+'</td></tr>');
+		}
+
+	</script>
+</head>
+<body style="width:90%">
+	
+	<!-- Trigger the modal with a button -->
+	<br/>
+	<button type="button" class="btn btn-success" data-toggle="modal" data-target="#addCuentaModal" style="margin-left: 50%;">Agregar</button>
+	<br/>
+	 <!-- cell-border compact row-border table -->
+	<table id="example" class="table table-bordred table-striped" style="width:90%">
+		<thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Saldo</th>
+                <th>Operación</th>
+            </tr>
+        </thead>
+    </table>
+
+    <!-- Modal Agregar-->
+	<div id="addCuentaModal" class="modal fade" role="dialog">
+	  <div class="modal-dialog">
+
+	    <!-- Modal content-->
+	    <div class="modal-content">
+	      <div class="modal-header">
+	        <button type="button" class="close" data-dismiss="modal">&times;</button>
+	        <h4 class="modal-title">Agregar cuenta</h4>
+	      </div>
+	      <div class="modal-body">
+	        <label for="cuenta">Cuenta/Cliente</label>
+	        <input type="text" name="cuenta" id="cuenta">
+	        <div id="mensaje" style="color: red; display: none;">Debe escribir el número de cuenta.</div>
+	      </div>
+	      <div class="modal-footer">
+	        <button type="button" class="btn btn-success" id="addRow" data-dismiss="modal">Guardar</button>
+	      </div>
+	    </div>
+
+	  </div>
+	</div>
+	<!-- Fin Modal Agregar -->
+
+	<!-- Modal Detalles -->
+	<div id="detalle" class="modal fade" role="dialog">
+	  <div class="modal-dialog">
+
+	    <!-- Modal content-->
+	    <div class="modal-content">
+	      <div class="modal-header">
+	        <button type="button" class="close" data-dismiss="modal">&times;</button>
+	        <h4 class="modal-title">Opciones de la cuenta</h4>
+	      </div>
+	      <div class="modal-body">
+	      	<div class="row">
+	      		<div class="col-xs-12 col-sm-12 col-md-12">
+	      			<button class="btn btn-success" id="saldo">Consulta de saldo</button>
+	      			<table id="detalleCuenta" class="table table-bordred table-striped">
+	      				<thead>
+				            <tr>
+				            	<th>Tipo</th>
+				                <th>Valor</th>
+				            </tr>
+				        </thead>
+				        <tbody id="cuerpoSaldo">
+				        	
+				        </tbody>
+	      			</table>
+	      		</div>
+	      	</div>
+	      	
+	      	<div class="row col-xs-12 col-sm-12 col-md-12">
+	      		<br/><br/>	
+	      		<div class="col-xs-3 col-sm-3 col-md-3">
+	        		<button class="btn btn-success">Extracción</button>
+	      		</div>
+	      		
+	      		<div class="col-xs-3 col-sm-3 col-md-3">
+	      			<button class="btn btn-success">Depósito</button>
+	      		</div>
+
+	      		<div class="col-xs-6 col-sm-6 col-md-6">
+	        		<button class="btn btn-success">Modificación de cuenta</button>
+	      		</div>
+	      	</div>
+	      	
+	      	<div class="row">
+	      		<div class="col-xs-12 col-sm-12 col-md-12">
+	      			<br/>
+	      			<button class="btn btn-danger" id="baja">Baja de cuenta</button>
+	      			<span id="mensajeError" class="alert alert-danger" style="display: none;"></span>
+	      		</div>
+	      		
+	      		<div class="col-xs-6 col-sm-6 col-md-6">
+	      			<input type="hidden" id="cuentaNombre" value=""/>
+	      			<input type="hidden" id="cuentaSaldo" value=""/>
+	      		</div>
+	      	</div>	        
+	      </div>
+	      <div class="modal-footer">
+	        <button type="button" class="btn btn-success" id="showRow" data-dismiss="modal">Cerrar</button>
+	      </div>
+	    </div>
+
+	  </div>
+	</div>
+	<!-- Fin Modal Detalles -->
+
+</body>
+</html>
